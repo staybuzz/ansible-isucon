@@ -18,10 +18,14 @@
       shell: cp /tmp/isucon4/qualifier/ami/files/my.cnf /etc/my.cnf
       notify:
         - restart mysqld
+    - name: modify my.cnf
+      shell: sed -i "/^\[mysqld\]/a sql_mode=ONLY_FULL_GROUP_BY,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION" /etc/my.cnf
+      notify:
+        - restart mysqld
     - command: rm -rf /tmp/isucon
       args:
         removes: /tmp/isucon
-    - file: path=/tmp/isucon state=directory 
+    - file: path=/tmp/isucon state=directory
     - shell: rsync -a /tmp/isucon4/qualifier/sql /tmp/isucon/
     - shell: rsync -a /tmp/isucon4/qualifier/webapp /tmp/isucon/
     - shell: |
@@ -37,8 +41,8 @@
     - command: rsync -avz --delete --exclude-from=/tmp/isucon4/qualifier/ami/files/rsync_exclude.txt /tmp/isucon/ /home/isucon/
       sudo: yes
   post_tasks:
+    - command: mysql -uroot -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY ''"
     - command: ./init.sh
-      sudo_user: isucon
       args:
         chdir: /home/isucon
     - mysql_user: name=isucon password=isucon priv=*.*:ALL state=present
